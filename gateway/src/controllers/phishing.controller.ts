@@ -82,16 +82,16 @@ export class PhishingController {
   @Get('clicked')
   @ApiOperation({ summary: 'Mark attempt as clicked' })
   @ApiQuery({
-    name: 'email',
+    name: 'token',
     type: String,
-    description: 'Email address to mark as clicked',
+    description: 'Get Token from client',
   })
   async victimClick(
-      @Query('email') email: string,
+      @Query('token') token: string,
   ): Promise<{ success: boolean }> {
     try {
       const response = await firstValueFrom(
-          this.attemptClient.send('victim-clicked', email),
+          this.attemptClient.send('victim-clicked', token),
       );
 
       return { success: response };

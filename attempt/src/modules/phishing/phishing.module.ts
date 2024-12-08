@@ -9,9 +9,18 @@ import {
 import { MongoConfigService } from '../../common/config/mongo-config.service';
 import { MailService } from '../mail/mail.service';
 import { PhishingController } from './phishing.controller';
+import {JwtModule} from "@nestjs/jwt";
 
 @Module({
   imports: [
+    JwtModule.register({
+      secret: (process.env.JWT_SECRET as string) || 'Xb7EpgsF4kI0DXL',
+      signOptions: {
+        algorithm: 'HS256',
+        expiresIn: '1m',
+        issuer: 'iss',
+      },
+    }),
     MailModule,
     MongooseModule.forRootAsync({
       useClass: MongoConfigService,

@@ -5,6 +5,7 @@ import { RpcException } from '@nestjs/microservices';
 import { Phishing } from '../../schemas/phishing/phishing.schema';
 import * as process from 'node:process';
 import { MailService } from '../mail/mail.service';
+import {JwtService} from "@nestjs/jwt";
 
 @Injectable()
 export class PhishingService {
@@ -12,6 +13,7 @@ export class PhishingService {
     @InjectModel(Phishing.name)
     private readonly phishingSchema: Model<Phishing>,
     private readonly mailService: MailService,
+    private jwtService: JwtService,
   ) {}
 
   async sendEmail(email: string): Promise<Phishing> {
@@ -27,7 +29,11 @@ export class PhishingService {
     }
 
     try {
-      const url = `${process.env.APP_URL}/phishing/clicked?email=${email}`;
+      const hashedToken = this.jwtService.sign({
+        email
+      });
+
+      const url = `${process.env.APP_URL}/phishing/clicked?token=${hashedToken}`;
       const content = `<p>This is a simulated phishing attempt. Click <a href="${url}">here</a> to check the result.</p>`;
 
       await this.mailService.sendPhishingEmail(email, content);
@@ -49,17 +55,32 @@ export class PhishingService {
     }
   }
 
-  async markAttemptAsClicked(email: string): Promise<void> {
-    if (!email) {
+  async markAttemptAsClicked(token: string): Promise<void> {
+    if (!token) {
       throw new RpcException({
-        message: 'Email is required',
+        message: 'Token is required',
+        type: 'BAD_REQUEST',
+      });
+    }
+
+    let targetEmail = '';
+
+    try {
+      const payload = (await this.jwtService.verifyAsync(token, {
+        secret: (process.env.JWT_SECRET as string) || 'Xb7EpgsF4kI0DXL',
+      })) as { email: string };
+
+      console.log(payload)
+      targetEmail = payload.email;
+    } catch {
+      throw new RpcException({
+        message: 'Link already expired',
         type: 'BAD_REQUEST',
       });
     }
 
     const attempt = await this.phishingSchema.findOne({
-      email,
-      status: 'pending',
+      email: targetEmail
     });
 
     if (!attempt) {

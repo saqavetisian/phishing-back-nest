@@ -18,8 +18,8 @@ export class PhishingController {
   }
 
   @MessagePattern('victim-clicked')
-  async victimClick(email: string): Promise<{ success: boolean }> {
-    await this.phishingService.markAttemptAsClicked(email);
+  async victimClick(token: string): Promise<{ success: boolean }> {
+    await this.phishingService.markAttemptAsClicked(token);
 
     return { success: true };
   }
